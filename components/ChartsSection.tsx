@@ -2,10 +2,10 @@
 import React, { useMemo } from 'react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-  LineChart, Line, PieChart, Pie, Cell, AreaChart, Area
+  PieChart, Pie, Cell, AreaChart, Area
 } from 'recharts';
-import { ProspectData } from '../types';
-import { safeStr, safeLower, getLastTouch, getChannelFromText, parseDate, formatDate } from '../utils/dataHelpers';
+import { ProspectData } from '../types.ts';
+import { safeStr, safeLower, getLastTouch, getChannelFromText, parseDate, formatDate } from '../utils/dataHelpers.ts';
 
 interface Props {
   data: ProspectData[];
@@ -14,14 +14,13 @@ interface Props {
 const COLORS = ['#0077b5', '#ea4335', '#25d366', '#a855f7', '#94a3b8'];
 
 const ChartsSection: React.FC<Props> = ({ data }) => {
-  // 1. Evolução Cumulativa
   const evolutionData = useMemo(() => {
     const dates: Record<string, { connections: number; responses: number; meetings: number }> = {};
     
     data.forEach(item => {
       const connDate = parseDate(item['Data Conexão']);
       if (connDate) {
-        const key = formatDate(connDate).substring(0, 5); // DD/MM
+        const key = formatDate(connDate).substring(0, 5); 
         if (!dates[key]) dates[key] = { connections: 0, responses: 0, meetings: 0 };
         dates[key].connections++;
       }
@@ -50,7 +49,6 @@ const ChartsSection: React.FC<Props> = ({ data }) => {
     });
   }, [data]);
 
-  // 2. Volume por Canal
   const channelData = useMemo(() => {
     const channels: Record<string, number> = { linkedin: 0, email: 0, whatsapp: 0, outros: 0 };
     data.forEach(item => {
@@ -65,7 +63,6 @@ const ChartsSection: React.FC<Props> = ({ data }) => {
     return Object.entries(channels).map(([name, value]) => ({ name, value }));
   }, [data]);
 
-  // 3. Eficiência de Agendamento por Canal
   const efficiencyData = useMemo(() => {
     const channels: Record<string, number> = { linkedin: 0, email: 0, whatsapp: 0, outros: 0 };
     data.filter(d => safeLower(d.Resultado).includes('agend')).forEach(d => {
@@ -79,7 +76,6 @@ const ChartsSection: React.FC<Props> = ({ data }) => {
 
   return (
     <div className="space-y-8">
-      {/* Evolução */}
       <div className="glass-card p-6 rounded-2xl border-blue-500/20">
         <h3 className="text-xl font-bold text-white mb-6">Evolução Cumulativa</h3>
         <div className="h-80 w-full">

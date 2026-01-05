@@ -1,12 +1,12 @@
 
 import React, { useState, useMemo } from 'react';
-import { ProspectData } from '../types';
-import { safeStr, safeLower, getNextPendingTouch, getLastTouch, parseDate } from '../utils/dataHelpers';
-import KpiCard from './KpiCard';
-import ChartsSection from './ChartsSection';
-import KanbanSection from './KanbanSection';
-import GoalCalculator from './GoalCalculator';
-import SearchSection from './SearchSection';
+import { ProspectData } from '../types.ts';
+import { safeStr, safeLower, getNextPendingTouch, getLastTouch, parseDate } from '../utils/dataHelpers.ts';
+import KpiCard from './KpiCard.tsx';
+import ChartsSection from './ChartsSection.tsx';
+import KanbanSection from './KanbanSection.tsx';
+import GoalCalculator from './GoalCalculator.tsx';
+import SearchSection from './SearchSection.tsx';
 import { Filter, FilterX, Users, TrendingUp, CheckCircle2, MessageCircle, AlertCircle, Calendar, Target } from 'lucide-react';
 
 interface Props {
@@ -68,7 +68,6 @@ const DashboardContent: React.FC<Props> = ({ rawData }) => {
 
   return (
     <div className="p-4 md:p-8 max-w-[1600px] mx-auto space-y-8 pb-24">
-      {/* Header */}
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
         <div>
           <h1 className="text-3xl font-bold text-white bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400">
@@ -84,7 +83,6 @@ const DashboardContent: React.FC<Props> = ({ rawData }) => {
         </div>
       </div>
 
-      {/* Filtros */}
       <div className="glass-card p-4 rounded-2xl border-white/5">
         <button 
           onClick={() => setShowFilters(!showFilters)}
@@ -130,7 +128,6 @@ const DashboardContent: React.FC<Props> = ({ rawData }) => {
         )}
       </div>
 
-      {/* KPIs */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
         <KpiCard title="Total de Contatos" value={stats.total} icon={Users} color="blue" />
         <KpiCard title="Em Prospecção" value={stats.prospeccao} icon={Calendar} color="yellow" />
@@ -144,16 +141,9 @@ const DashboardContent: React.FC<Props> = ({ rawData }) => {
         <KpiCard title="% Agend / Total" value={`${stats.pctAgendTotal.toFixed(1)}%`} icon={Target} color="sky" />
       </div>
 
-      {/* Gráficos */}
       <ChartsSection data={filteredData} />
-
-      {/* Calculadora */}
       <GoalCalculator data={filteredData} />
-
-      {/* Kanbans */}
       <KanbanSection data={filteredData} />
-
-      {/* Busca */}
       <SearchSection allData={rawData} />
     </div>
   );

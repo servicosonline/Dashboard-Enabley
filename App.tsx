@@ -1,8 +1,8 @@
 
 import React, { useState } from 'react';
 import { Upload, FileSpreadsheet, BarChart3, ChevronRight, X, AlertCircle } from 'lucide-react';
-import { ProspectData } from './types';
-import DashboardContent from './components/DashboardContent';
+import { ProspectData } from './types.ts';
+import DashboardContent from './components/DashboardContent.tsx';
 
 const App: React.FC = () => {
   const [data, setData] = useState<ProspectData[] | null>(null);
@@ -33,11 +33,6 @@ const App: React.FC = () => {
         
         if (jsonData.length === 0) {
           throw new Error("A planilha parece estar vazia.");
-        }
-
-        // Validação básica de colunas para garantir que é o formato correto
-        if (!jsonData[0].Empresa && !jsonData[0].Nome) {
-          throw new Error("O formato da planilha parece incorreto. Verifique as colunas.");
         }
 
         setData(jsonData);
@@ -130,15 +125,11 @@ const App: React.FC = () => {
             </div>
             <div className="flex flex-col items-center p-6 glass-card rounded-2xl">
               <Upload className="w-8 h-8 text-green-400 mb-4" />
-              <h3 className="text-white font-bold mb-2">Exportação Direta</h3>
-              <p className="text-slate-500 text-xs leading-relaxed">Sem banco de dados. Seus dados permanecem seguros no navegador.</p>
+              <h3 className="text-white font-bold mb-2">Privacidade Total</h3>
+              <p className="text-slate-500 text-xs leading-relaxed">Sem banco de dados. Seus dados permanecem seguros no seu navegador.</p>
             </div>
           </div>
         </div>
-        
-        <footer className="mt-20 text-slate-600 text-[10px] uppercase tracking-[0.2em] font-bold">
-          © 2024 Enabley Prospecção Inteligente
-        </footer>
       </div>
     );
   }
