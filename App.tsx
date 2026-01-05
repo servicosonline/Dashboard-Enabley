@@ -1,134 +1,111 @@
 
-import React, { useState } from 'react';
-import { Upload, FileSpreadsheet, BarChart3, ChevronRight, X, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { FileSpreadsheet, AlertCircle, RefreshCw, BarChart3, ChevronRight } from 'lucide-react';
 import { ProspectData } from './types.ts';
 import DashboardContent from './components/DashboardContent.tsx';
 
 const App: React.FC = () => {
   const [data, setData] = useState<ProspectData[] | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
+  const fetchData = useCallback(async () => {
     setLoading(true);
     setError(null);
-
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      try {
-        const bstr = e.target?.result;
-        // @ts-ignore - XLSX is loaded from CDN in index.html
-        if (!window.XLSX) {
-          throw new Error("Biblioteca de processamento não carregada. Verifique sua conexão.");
-        }
-        // @ts-ignore
-        const workbook = window.XLSX.read(bstr, { type: 'binary' });
-        const firstSheetName = workbook.SheetNames[0];
-        const worksheet = workbook.Sheets[firstSheetName];
-        // @ts-ignore
-        const jsonData = window.XLSX.utils.sheet_to_json(worksheet) as ProspectData[];
-        
-        if (jsonData.length === 0) {
-          throw new Error("A planilha parece estar vazia.");
-        }
-
-        setData(jsonData);
-      } catch (err: any) {
-        setError(err.message || "Erro ao processar o arquivo.");
-      } finally {
-        setLoading(false);
+    try {
+      // Usando exatamente o nome solicitado pelo usuário: "Ataque Enabley.CSV"
+      // Tentaremos buscar o arquivo. Em servidores como GitHub Pages, a diferenciação entre maiúsculas/minúsculas é rigorosa.
+      const fileName = 'Ataque Enabley.CSV';
+      const fileUrl = `./${fileName.replace(/ /g, '%20')}`;
+      
+      let response = await fetch(fileUrl, { cache: 'no-store' });
+      
+      // Caso falhe com .CSV (maiúsculo), tentamos com .csv (minúsculo) como fallback
+      if (!response.ok && response.status === 404) {
+        const fallbackName = 'Ataque Enabley.csv';
+        const fallbackUrl = `./${fallbackName.replace(/ /g, '%20')}`;
+        response = await fetch(fallbackUrl, { cache: 'no-store' });
       }
-    };
-    reader.onerror = () => {
-      setError("Erro físico na leitura do arquivo.");
+
+      if (!response.ok) {
+        throw new Error(`Arquivo "${fileName}" não encontrado. Certifique-se de que o arquivo está na raiz do seu repositório GitHub com o nome exato.`);
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      
+      // @ts-ignore - XLSX is loaded from CDN in index.html
+      if (!window.XLSX) {
+        throw new Error("A biblioteca de processamento (XLSX) não foi carregada. Tente recarregar a página.");
+      }
+
+      // @ts-ignore
+      const workbook = window.XLSX.read(new Uint8Array(arrayBuffer), { type: 'array' });
+      const firstSheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[firstSheetName];
+      
+      // @ts-ignore
+      const jsonData = window.XLSX.utils.sheet_to_json(worksheet, { defval: "" }) as ProspectData[];
+      
+      if (jsonData.length === 0) {
+        throw new Error("O arquivo foi encontrado, mas parece não conter dados válidos.");
+      }
+
+      setData(jsonData);
+    } catch (err: any) {
+      console.error('Erro de busca:', err);
+      setError(err.message || "Erro desconhecido ao carregar dados.");
+    } finally {
       setLoading(false);
-    };
-    reader.readAsBinaryString(file);
-  };
+    }
+  }, []);
 
-  const resetData = () => {
-    setData(null);
-    setError(null);
-  };
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
-  if (!data) {
+  if (loading && !data) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#0f172a]">
-        <div className="max-w-3xl w-full text-center space-y-12 animate-enter">
-          
-          <div className="space-y-4">
-             <div className="flex justify-center mb-6">
-                <img src="https://github.com/servicosonline/enabley/blob/main/essa.png?raw=true" alt="Enabley Logo" className="h-20 w-auto brightness-125" />
-             </div>
-            <h1 className="text-4xl md:text-6xl font-black text-white tracking-tight">
-              Dashboard <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-500">Enabley</span>
-            </h1>
-            <p className="text-slate-400 text-lg md:text-xl font-medium">
-              Analise seus dados de prospecção de forma profissional e instantânea.
-            </p>
+        <div className="flex flex-col items-center gap-8 animate-enter">
+          <img src="https://github.com/servicosonline/enabley/blob/main/essa.png?raw=true" alt="Enabley Logo" className="h-24 w-auto brightness-125 mb-4" />
+          <div className="relative">
+             <div className="w-20 h-20 border-4 border-purple-500/20 border-t-purple-500 rounded-full animate-spin"></div>
+             <BarChart3 className="w-8 h-8 text-purple-400 absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
           </div>
+          <div className="text-center space-y-2">
+            <h2 className="text-2xl font-bold text-white tracking-tight">Sincronizando Dashboard</h2>
+            <p className="text-slate-500 text-sm animate-pulse">Buscando "Ataque Enabley.CSV" no repositório...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-          <div className="relative group">
-            <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-purple-600 rounded-3xl blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-            <div className="relative glass-card p-12 rounded-3xl border-2 border-dashed border-purple-500/40 flex flex-col items-center gap-8 hover:border-purple-400 transition-all cursor-pointer">
-              <input 
-                type="file" 
-                accept=".xlsx, .csv" 
-                onChange={handleFileUpload}
-                className="absolute inset-0 opacity-0 cursor-pointer z-10"
-              />
-              <div className="p-8 bg-purple-500/20 rounded-full group-hover:scale-110 transition-transform duration-500">
-                <Upload className="w-16 h-16 text-purple-400" />
-              </div>
-              <div className="space-y-2">
-                <p className="text-2xl font-bold text-white">Carregue sua Planilha</p>
-                <p className="text-slate-500">Arraste um arquivo .xlsx ou .csv aqui</p>
-              </div>
-              
-              <div className="flex items-center gap-2 text-xs font-semibold text-slate-400 bg-slate-800/50 px-4 py-2 rounded-full border border-white/5">
-                <FileSpreadsheet className="w-4 h-4" />
-                <span>Formatos suportados: XLSX, CSV</span>
-              </div>
+  if (error) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center p-6 bg-[#0f172a]">
+        <div className="max-w-md w-full glass-card p-8 rounded-3xl border-red-500/30 text-center space-y-6">
+          <div className="inline-flex p-4 bg-red-500/10 rounded-full">
+            <AlertCircle className="w-12 h-12 text-red-400" />
+          </div>
+          <div className="space-y-2">
+            <h2 className="text-xl font-bold text-white">Arquivo não encontrado</h2>
+            <p className="text-slate-400 text-sm">{error}</p>
+            <div className="mt-4 p-3 bg-slate-900/50 rounded-lg text-left">
+              <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Dica técnica:</p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Verifique se o arquivo está na raiz do seu repositório GitHub com o nome:<br/>
+                <code className="text-blue-400">Ataque Enabley.CSV</code> ou <code className="text-blue-400">Ataque Enabley.csv</code>
+              </p>
             </div>
           </div>
-
-          {loading && (
-            <div className="flex flex-col items-center gap-4 text-purple-400">
-              <div className="w-10 h-10 border-4 border-purple-400 border-t-transparent rounded-full animate-spin"></div>
-              <span className="font-bold tracking-widest uppercase text-xs">Transformando dados...</span>
-            </div>
-          )}
-
-          {error && (
-            <div className="flex items-center gap-3 p-4 bg-red-500/10 border border-red-500/30 rounded-2xl text-red-400 animate-pulse">
-              <AlertCircle className="w-5 h-5 flex-shrink-0" />
-              <p className="text-sm font-medium">{error}</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-8">
-            <div className="flex flex-col items-center p-6 glass-card rounded-2xl">
-              <BarChart3 className="w-8 h-8 text-blue-400 mb-4" />
-              <h3 className="text-white font-bold mb-2">KPIs Visuais</h3>
-              <p className="text-slate-500 text-xs leading-relaxed">Conversão, volume e eficiência por canal em tempo real.</p>
-            </div>
-            <div className="flex flex-col items-center p-6 glass-card rounded-2xl">
-              <div className="flex -space-x-2 mb-4">
-                <div className="w-8 h-8 rounded-full bg-purple-500/20 flex items-center justify-center border border-purple-500/30"><ChevronRight className="w-4 h-4 text-purple-400" /></div>
-                <div className="w-8 h-8 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30"><ChevronRight className="w-4 h-4 text-blue-400" /></div>
-              </div>
-              <h3 className="text-white font-bold mb-2">Pipeline Kanban</h3>
-              <p className="text-slate-500 text-xs leading-relaxed">Gestão de contatos por estágio e identificação de atrasos.</p>
-            </div>
-            <div className="flex flex-col items-center p-6 glass-card rounded-2xl">
-              <Upload className="w-8 h-8 text-green-400 mb-4" />
-              <h3 className="text-white font-bold mb-2">Privacidade Total</h3>
-              <p className="text-slate-500 text-xs leading-relaxed">Sem banco de dados. Seus dados permanecem seguros no seu navegador.</p>
-            </div>
-          </div>
+          <button 
+            onClick={fetchData}
+            className="w-full flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 rounded-xl transition-all border border-white/5"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Tentar Novamente
+          </button>
         </div>
       </div>
     );
@@ -136,16 +113,22 @@ const App: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#0f172a]">
-      <div className="fixed top-6 right-6 z-50">
+      <div className="fixed top-6 right-6 z-50 flex gap-3">
         <button 
-          onClick={resetData}
-          className="flex items-center gap-3 bg-slate-900/90 backdrop-blur-xl hover:bg-red-500/20 text-slate-300 hover:text-red-400 border border-white/10 px-6 py-3 rounded-2xl transition-all shadow-2xl group"
+          onClick={fetchData}
+          className="flex items-center gap-3 bg-slate-900/90 backdrop-blur-xl hover:bg-purple-500/20 text-slate-300 hover:text-purple-400 border border-white/10 px-6 py-3 rounded-2xl transition-all shadow-2xl group"
         >
-          <X className="w-5 h-5 group-hover:rotate-90 transition-transform" />
-          <span className="font-bold text-xs tracking-wider uppercase">Nova Planilha</span>
+          <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : 'group-hover:rotate-180'} transition-transform`} />
+          <span className="font-bold text-xs tracking-wider uppercase">
+            {loading ? 'Atualizando...' : 'Sincronizar Dados'}
+          </span>
         </button>
       </div>
-      <DashboardContent rawData={data} />
+      {data && <DashboardContent rawData={data} />}
+      
+      <footer className="py-8 text-center text-slate-600 text-[10px] uppercase tracking-[0.2em] font-bold">
+        © 2024 Enabley Prospecção Inteligente
+      </footer>
     </div>
   );
 };
