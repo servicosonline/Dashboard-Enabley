@@ -1,0 +1,5 @@
+{
+  "name": "Dashboard de Prospecção Pro",
+  "description": "Uma aplicação web completa para transformar planilhas de prospecção em dashboards interativos com análise de KPIs, funil de vendas, kanban e calculadora de metas.",
+  "requestFramePermissions": []
+}
